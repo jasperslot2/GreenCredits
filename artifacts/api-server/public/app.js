@@ -85,7 +85,18 @@ function asHex(value) {
 function walletTransaction(item) {
   const tx = unwrapTransaction(item);
   if (!tx.to || !tx.data) throw new Error("Brickken returned an incomplete wallet transaction.");
-  return { from: state.account, to: tx.to, data: tx.data, value: asHex(tx.value), gas: asHex(tx.gas ?? tx.gasLimit) };
+  return {
+    from: state.account,
+    to: tx.to,
+    data: tx.data,
+    value: asHex(tx.value),
+    gas: asHex(tx.gas ?? tx.gasLimit),
+    nonce: asHex(tx.nonce),
+    chainId: asHex(tx.chainId),
+    type: tx.type === undefined ? undefined : asHex(tx.type),
+    maxFeePerGas: asHex(tx.maxFeePerGas),
+    maxPriorityFeePerGas: asHex(tx.maxPriorityFeePerGas),
+  };
 }
 
 async function executePrepared(prepared, label, progress) {
