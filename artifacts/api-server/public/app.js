@@ -90,19 +90,32 @@ async function executePrepared(prepared, label) {
     await api("/brickken/send", { method: "POST", body: JSON.stringify({ txId, txHash: hash }) });
     addActivity(label, `${shortAddress(hash)} submitted`);
   }
-  for (const submitted of hashes) await waitForConfirmation(submitted.txId);
+  for (const submitted of hashes) await waitForConfirmation(submitted.txId, submitted.hash);
   return hashes;
 }
 
-async function waitForConfirmation(txId) {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
+async function waitForWalletReceipt(hash) {
+  for (let attempt = 0; attempt < 45; attempt += 1) {
+    const receipt = await state.ethereum.request({ method: "eth_getTransactionReceipt", params: [hash] });
+    if (receipt) {
+      if (receipt.status === "0x0") throw new Error("The wallet transaction was reverted on-chain.");
+      return receipt;
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 1000));
+  }
+  throw new Error("The wallet transaction is still pending. Check your wallet before retrying.");
+}
+
+async function waitForConfirmation(txId, hash) {
+  await waitForWalletReceipt(hash);
+  for (let attempt = 0; attempt < 5; attempt += 1) {
     const status = await api(`/brickken/status?txId=${encodeURIComponent(txId)}`);
     const value = String(status.status || status.state || "").toLowerCase();
     if (["confirmed", "success", "completed", "succeeded"].includes(value)) return status;
     if (["failed", "reverted", "rejected", "error"].includes(value)) throw new Error(`Transaction ${value}.`);
-    await new Promise((resolve) => window.setTimeout(resolve, 2000));
+    await new Promise((resolve) => window.setTimeout(resolve, 1000));
   }
-  throw new Error("Transaction is still pending. Check the activity on Brickken before retrying.");
+  throw new Error("The transaction is confirmed in your wallet, but Brickken is still indexing it. Wait a moment before starting another action.");
 }
 
 async function prepareAndExecute(operation, body, label) {
