@@ -189,12 +189,28 @@ async function checkTokenRegistration() {
       updateCreationProgress(96, "Still indexing with Brickken", `Wallet transaction ${shortAddress(hash)} is confirmed, but GREEN is not registered in Brickken yet. Do not deploy again.`);
       showToast("GREEN is not registered in Brickken yet.");
     } catch (statusError) {
-      updateCreationProgress(96, "Deployment status unavailable", `${statusError.message} Transaction: ${shortAddress(hash)}`);
-      showToast(statusError.message);
+      if (statusError.message.includes("Transaction not found")) {
+        resetLocalDeploymentState();
+        showToast("No Brickken deployment was found. You can deploy GREEN again.");
+      } else {
+        updateCreationProgress(96, "Deployment status unavailable", `${statusError.message} Transaction: ${shortAddress(hash)}`);
+        showToast(statusError.message);
+      }
     }
   } finally {
     setBusy(button, false);
   }
+}
+
+function resetLocalDeploymentState() {
+  localStorage.removeItem("greencredits-deployment");
+  localStorage.removeItem("greencredits-token-confirmed");
+  state.tokenDeploymentConfirmed = false;
+  $("create-button").disabled = !state.account;
+  $("check-registration-button").hidden = true;
+  $("reset-deployment-button").hidden = true;
+  $("creation-progress").hidden = true;
+  $("creation-progress-bar").classList.remove("progress-error");
 }
 
 async function prepareAndExecute(operation, body, label, progress) {
@@ -276,6 +292,7 @@ async function initializeTokenState() {
       state.tokenDeploymentConfirmed = true;
       $("create-button").disabled = true;
       $("check-registration-button").hidden = false;
+      $("reset-deployment-button").hidden = false;
       updateCreationProgress(96, "Checking Brickken registration", "A previous deployment was confirmed by your wallet. Do not deploy GREEN again.");
     }
   }
@@ -291,6 +308,7 @@ async function bootstrap() {
     $("refresh-button").addEventListener("click", () => refreshBalance());
     $("create-button").addEventListener("click", createToken);
     $("check-registration-button").addEventListener("click", checkTokenRegistration);
+    $("reset-deployment-button").addEventListener("click", resetLocalDeploymentState);
     document.querySelectorAll(".initiative-button").forEach((button) => button.addEventListener("click", () => mint(button.dataset.amount, button)));
     document.querySelectorAll(".reward-button").forEach((button) => button.addEventListener("click", () => burn(button.dataset.amount, button)));
     $("investor-email").addEventListener("change", refreshBalance);
