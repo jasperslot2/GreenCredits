@@ -1,4 +1,4 @@
-const state = { account: null, config: null, ethereum: window.ethereum };
+const state = { account: null, config: null, ethereum: window.ethereum, tokenDeploymentConfirmed: false };
 const $ = (id) => document.getElementById(id);
 
 function showToast(message) {
@@ -122,14 +122,30 @@ async function waitForConfirmation(txId, hash, progress) {
     const status = await api(`/brickken/status?txId=${encodeURIComponent(txId)}&poll=${Date.now()}`);
     const value = String(status.status || status.state || "").toLowerCase();
     if (["confirmed", "success", "completed", "succeeded"].includes(value)) {
-      if (progress) progress(100, "GREEN is ready", "The token has been created and is ready for rewards.");
-      return status;
+      state.tokenDeploymentConfirmed = true;
+      return waitForTokenRecord(progress);
     }
     if (["failed", "reverted", "rejected", "error"].includes(value)) throw new Error(`Transaction ${value}.`);
     if (progress && attempt % 5 === 0) progress(82 + Math.min(16, Math.floor(attempt / 5)), "Indexing with Brickken", "The transaction is confirmed. Waiting for Brickken to finish registering GREEN.");
     await new Promise((resolve) => window.setTimeout(resolve, 2000));
   }
   throw new Error("Brickken is taking longer than expected to index GREEN. The wallet transaction is confirmed; check again shortly before retrying.");
+}
+
+async function waitForTokenRecord(progress) {
+  for (let attempt = 0; attempt < 90; attempt += 1) {
+    try {
+      const token = await api(`/brickken/token?poll=${Date.now()}`);
+      if (token && token.tokenSymbol === state.config.tokenSymbol) {
+        if (progress) progress(100, "GREEN is ready", "The token has been created and is ready for rewards.");
+        return token;
+      }
+    } catch (error) {
+      if (progress && attempt % 5 === 0) progress(82 + Math.min(16, Math.floor(attempt / 5)), "Indexing with Brickken", "The blockchain transaction is confirmed. Waiting for GREEN to appear in Brickken.");
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 2000));
+  }
+  throw new Error("The blockchain transaction is confirmed, but Brickken has not registered GREEN yet. Do not deploy again; wait for the token record to appear.");
 }
 
 async function prepareAndExecute(operation, body, label, progress) {
@@ -158,10 +174,16 @@ async function createToken() {
     showToast("GREEN token confirmed on-chain.");
   }
   catch (error) {
-    updateCreationProgress(0, "Token deployment failed", error.message);
-    $("creation-progress-bar").classList.add("progress-error");
-    addActivity("Token deployment failed", error.message, false);
-    showToast(error.message);
+    if (state.tokenDeploymentConfirmed) {
+      updateCreationProgress(96, "Blockchain confirmed", error.message);
+      $("create-button").disabled = true;
+      showToast(error.message);
+    } else {
+      updateCreationProgress(0, "Token deployment failed", error.message);
+      $("creation-progress-bar").classList.add("progress-error");
+      addActivity("Token deployment failed", error.message, false);
+      showToast(error.message);
+    }
   }
   finally { setBusy(button, false); }
 }
