@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Response } from "express";
 import {
   brickkenRequest,
+  BrickkenRequestError,
   getBrickkenConfig,
   type BrickkenOperation,
 } from "../lib/brickken";
@@ -38,7 +39,11 @@ function requireAmount(value: unknown): string {
 
 function sendError(res: Response, error: unknown) {
   const message = error instanceof Error ? error.message : "Brickken request failed.";
-  const status = message.includes("required") || message.includes("valid") || message.includes("positive") ? 400 : 502;
+  const status = error instanceof BrickkenRequestError
+    ? error.status
+    : message.includes("required") || message.includes("valid") || message.includes("positive")
+      ? 400
+      : 502;
   res.status(status).json({ error: message });
 }
 

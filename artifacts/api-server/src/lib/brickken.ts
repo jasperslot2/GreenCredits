@@ -14,6 +14,13 @@ type BrickkenConfig = {
   tokenizerEmail: string;
 };
 
+export class BrickkenRequestError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = "BrickkenRequestError";
+  }
+}
+
 export function getBrickkenConfig(): BrickkenConfig {
   return {
     apiKey: process.env.BRICKKEN_API_KEY ?? "",
@@ -47,7 +54,7 @@ export async function brickkenRequest(
 
   if (!response.ok) {
     const detail = getBrickkenError(responseBody) ?? `Brickken returned HTTP ${response.status}.`;
-    throw new Error(detail);
+    throw new BrickkenRequestError(detail, response.status);
   }
 
   return responseBody;

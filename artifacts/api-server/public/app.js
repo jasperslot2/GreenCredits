@@ -96,7 +96,7 @@ async function waitForConfirmation(txId) {
     const status = await api(`/brickken/status?txId=${encodeURIComponent(txId)}`);
     const value = String(status.status || status.state || "").toLowerCase();
     if (["confirmed", "success", "completed", "succeeded"].includes(value)) return status;
-    if (["failed", "reverted", "error"].includes(value)) throw new Error(`Transaction ${value}.`);
+    if (["failed", "reverted", "rejected", "error"].includes(value)) throw new Error(`Transaction ${value}.`);
     await new Promise((resolve) => window.setTimeout(resolve, 2000));
   }
   throw new Error("Transaction is still pending. Check the activity on Brickken before retrying.");
