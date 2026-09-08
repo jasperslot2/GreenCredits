@@ -135,6 +135,8 @@ async function waitForConfirmation(txId, hash, progress) {
     if (["failed", "reverted", "rejected", "error"].includes(value)) {
       const detail = status.error || status.message || "No additional error details were provided.";
       const reference = status.transactionHash ? ` (${shortAddress(status.transactionHash)})` : "";
+      resetLocalDeploymentState();
+      if (progress) progress(0, "Deployment rejected", `Brickken rejected the deployment${reference}. ${detail}`);
       throw new Error(`Transaction ${value}${reference}: ${detail}`);
     }
     if (progress && attempt % 5 === 0) progress(82 + Math.min(16, Math.floor(attempt / 5)), "Indexing with Brickken", "The transaction is confirmed. Waiting for Brickken to finish registering GREEN.");
@@ -184,12 +186,16 @@ async function checkTokenRegistration() {
       const status = await api(`/brickken/status?txId=${encodeURIComponent(txId)}&hash=${encodeURIComponent(hash)}&poll=${Date.now()}`);
       const value = String(status.status || status.state || "").toLowerCase();
       if (["rejected", "failed", "reverted", "error"].includes(value)) {
+        resetLocalDeploymentState();
         throw new Error(`Brickken rejected the deployment: ${status.error || status.message || "No reason supplied."}`);
       }
       updateCreationProgress(96, "Still indexing with Brickken", `Wallet transaction ${shortAddress(hash)} is confirmed, but GREEN is not registered in Brickken yet. Do not deploy again.`);
       showToast("GREEN is not registered in Brickken yet.");
     } catch (statusError) {
-      if (statusError.message.includes("Transaction not found")) {
+      if (statusError.message.includes("rejected the deployment")) {
+        updateCreationProgress(0, "Deployment rejected", statusError.message);
+        showToast(statusError.message);
+      } else if (statusError.message.includes("Transaction not found")) {
         resetLocalDeploymentState();
         showToast("No Brickken deployment was found. You can deploy GREEN again.");
       } else {
