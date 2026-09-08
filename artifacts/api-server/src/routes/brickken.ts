@@ -190,8 +190,12 @@ router.get("/status", async (req, res) => {
   try {
     res.setHeader("Cache-Control", "no-store");
     const txId = requireText(req.query.txId, "txId");
+    const hash = typeof req.query.hash === "string" ? req.query.hash : undefined;
+    const query = hash
+      ? `hash=${encodeURIComponent(hash)}`
+      : `txId=${encodeURIComponent(txId)}`;
     const status = await brickkenRequest(
-      `/get-transaction-status?txId=${encodeURIComponent(txId)}`,
+      `/get-transaction-status?${query}`,
       { method: "GET" },
     );
     res.json(status);

@@ -19,10 +19,12 @@ function updateCreationProgress(percent, label, detail) {
   $("creation-progress-detail").textContent = detail;
 }
 function setConnected(enabled) {
-  ["refresh-button", "create-button", ...document.querySelectorAll(".initiative-button, .reward-button")].forEach((control) => {
+  const deploymentLocked = state.tokenDeploymentConfirmed || Boolean(localStorage.getItem("greencredits-deployment"));
+  ["refresh-button", ...document.querySelectorAll(".initiative-button, .reward-button")].forEach((control) => {
     const element = typeof control === "string" ? $(control) : control;
     if (element) element.disabled = !enabled;
   });
+  $("create-button").disabled = !enabled || deploymentLocked;
   $("connect-button").textContent = enabled ? shortAddress(state.account) : "Connect wallet";
   $("wallet-address").textContent = enabled ? state.account : "Wallet not connected";
   $("wallet-state").lastElementChild.textContent = enabled ? "Wallet connected. You are ready to act." : "Connect your wallet to enter the app";
@@ -95,7 +97,11 @@ async function executePrepared(prepared, label, progress) {
     if (progress) progress(45, "Confirm in your wallet", "Approve the GREEN deployment in your wallet.");
     const hash = await state.ethereum.request({ method: "eth_sendTransaction", params: [walletTransaction(items[index])] });
     hashes.push({ txId, hash });
-    await api("/brickken/send", { method: "POST", body: JSON.stringify({ txId, txHash: hash }) });
+    const sent = await api("/brickken/send", { method: "POST", body: JSON.stringify({ txId, txHash: hash }) });
+    if (sent.status === "rejected") {
+      throw new Error(`Brickken rejected the transaction: ${sent.error || sent.message || "No reason supplied."}`);
+    }
+    localStorage.setItem("greencredits-deployment", JSON.stringify({ txId, hash, createdAt: Date.now() }));
     addActivity(label, `${shortAddress(hash)} submitted`);
     if (progress) progress(65, "Confirming on-chain", "Your wallet transaction was submitted. Waiting for the blockchain receipt.");
   }
@@ -119,10 +125,11 @@ async function waitForConfirmation(txId, hash, progress) {
   await waitForWalletReceipt(hash);
   if (progress) progress(82, "Indexing with Brickken", "The blockchain receipt is confirmed. Brickken is registering the GREEN token.");
   for (let attempt = 0; attempt < 90; attempt += 1) {
-    const status = await api(`/brickken/status?txId=${encodeURIComponent(txId)}&poll=${Date.now()}`);
+    const status = await api(`/brickken/status?txId=${encodeURIComponent(txId)}&hash=${encodeURIComponent(hash)}&poll=${Date.now()}`);
     const value = String(status.status || status.state || "").toLowerCase();
     if (["confirmed", "success", "completed", "succeeded"].includes(value)) {
       state.tokenDeploymentConfirmed = true;
+      localStorage.setItem("greencredits-token-confirmed", "true");
       return waitForTokenRecord(progress);
     }
     if (["failed", "reverted", "rejected", "error"].includes(value)) {
@@ -205,6 +212,7 @@ async function createToken() {
       $("check-registration-button").hidden = false;
       showToast(error.message);
     } else {
+      localStorage.removeItem("greencredits-deployment");
       updateCreationProgress(0, "Token deployment failed", error.message);
       $("creation-progress-bar").classList.add("progress-error");
       addActivity("Token deployment failed", error.message, false);
@@ -246,6 +254,13 @@ async function initializeTokenState() {
     $("setup-panel").hidden = true;
   } catch (error) {
     $("setup-panel").hidden = false;
+    const deployment = localStorage.getItem("greencredits-deployment");
+    if (deployment) {
+      state.tokenDeploymentConfirmed = true;
+      $("create-button").disabled = true;
+      $("check-registration-button").hidden = false;
+      updateCreationProgress(96, "Checking Brickken registration", "A previous deployment was confirmed by your wallet. Do not deploy GREEN again.");
+    }
   }
 }
 
