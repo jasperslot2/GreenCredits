@@ -137,7 +137,7 @@ async function waitForConfirmation(txId, hash, progress) {
 }
 
 async function waitForTokenRecord(progress) {
-  for (let attempt = 0; attempt < 90; attempt += 1) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
     try {
       const token = await api(`/brickken/token?poll=${Date.now()}`);
       if (token && token.tokenSymbol === state.config.tokenSymbol) {
@@ -149,7 +149,28 @@ async function waitForTokenRecord(progress) {
     }
     await new Promise((resolve) => window.setTimeout(resolve, 2000));
   }
-  throw new Error("The blockchain transaction is confirmed, but Brickken has not registered GREEN yet. Do not deploy again; wait for the token record to appear.");
+  throw new Error("The blockchain transaction is confirmed, but Brickken is still indexing GREEN. Do not deploy again.");
+}
+
+async function checkTokenRegistration() {
+  const button = $("check-registration-button");
+  setBusy(button, true);
+  updateCreationProgress(96, "Checking Brickken registration", "Checking whether GREEN is now available in Brickken.");
+  try {
+    const token = await api(`/brickken/token?poll=${Date.now()}`);
+    if (token && token.tokenSymbol === state.config.tokenSymbol) {
+      $("setup-panel").hidden = true;
+      updateCreationProgress(100, "GREEN is ready", "The token has been created and is ready for rewards.");
+      showToast("GREEN is now registered with Brickken.");
+      return;
+    }
+    throw new Error("GREEN is not visible in Brickken yet.");
+  } catch (error) {
+    updateCreationProgress(96, "Still indexing with Brickken", `${error.message} Do not deploy GREEN again.`);
+    showToast(error.message);
+  } finally {
+    setBusy(button, false);
+  }
 }
 
 async function prepareAndExecute(operation, body, label, progress) {
@@ -181,6 +202,7 @@ async function createToken() {
     if (state.tokenDeploymentConfirmed) {
       updateCreationProgress(96, "Blockchain confirmed", error.message);
       $("create-button").disabled = true;
+      $("check-registration-button").hidden = false;
       showToast(error.message);
     } else {
       updateCreationProgress(0, "Token deployment failed", error.message);
@@ -236,6 +258,7 @@ async function bootstrap() {
     $("connect-button").addEventListener("click", () => connectWallet().catch((error) => showToast(error.message)));
     $("refresh-button").addEventListener("click", () => refreshBalance());
     $("create-button").addEventListener("click", createToken);
+    $("check-registration-button").addEventListener("click", checkTokenRegistration);
     document.querySelectorAll(".initiative-button").forEach((button) => button.addEventListener("click", () => mint(button.dataset.amount, button)));
     document.querySelectorAll(".reward-button").forEach((button) => button.addEventListener("click", () => burn(button.dataset.amount, button)));
     $("investor-email").addEventListener("change", refreshBalance);
