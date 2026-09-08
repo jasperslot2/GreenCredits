@@ -125,7 +125,11 @@ async function waitForConfirmation(txId, hash, progress) {
       state.tokenDeploymentConfirmed = true;
       return waitForTokenRecord(progress);
     }
-    if (["failed", "reverted", "rejected", "error"].includes(value)) throw new Error(`Transaction ${value}.`);
+    if (["failed", "reverted", "rejected", "error"].includes(value)) {
+      const detail = status.error || status.message || "No additional error details were provided.";
+      const reference = status.transactionHash ? ` (${shortAddress(status.transactionHash)})` : "";
+      throw new Error(`Transaction ${value}${reference}: ${detail}`);
+    }
     if (progress && attempt % 5 === 0) progress(82 + Math.min(16, Math.floor(attempt / 5)), "Indexing with Brickken", "The transaction is confirmed. Waiting for Brickken to finish registering GREEN.");
     await new Promise((resolve) => window.setTimeout(resolve, 2000));
   }
