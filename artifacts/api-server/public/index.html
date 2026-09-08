@@ -54,32 +54,37 @@
           <p class="muted" id="balance-source">Your on-chain balance appears here after connecting.</p>
         </section>
 
-        <section class="actions-grid">
-          <article class="action-card action-mint">
-            <div class="card-top"><span class="step-number">01</span><span class="card-icon">+</span></div>
-            <h3>Record an action</h3>
-            <p>Mint GREEN when a sustainable action has been verified.</p>
-            <label>Investor email<input id="investor-email" type="email" placeholder="you@example.com" autocomplete="email" /></label>
-            <label>Credits to mint<input id="mint-amount" type="number" min="1" step="1" value="10" /></label>
-            <button id="mint-button" class="button button-green" disabled>Mint GREEN <span>↗</span></button>
-          </article>
+        <section class="setup-panel" id="setup-panel" hidden>
+          <div>
+            <p class="eyebrow">One-time setup</p>
+            <h2>Create the GREEN token</h2>
+            <p class="muted">This is shown only until Brickken confirms that GREEN exists for this account.</p>
+          </div>
+          <div class="setup-controls">
+            <input id="tokenizer-email" type="email" placeholder="Licensed Brickken email" autocomplete="email" />
+            <button id="create-button" class="button button-outline" disabled>Deploy GREEN <span>↗</span></button>
+          </div>
+        </section>
 
-          <article class="action-card action-redeem">
-            <div class="card-top"><span class="step-number">02</span><span class="card-icon">−</span></div>
-            <h3>Redeem a reward</h3>
-            <p>Burn GREEN from this wallet when a reward is claimed.</p>
-            <label>Investor email<input id="redeem-email" type="email" placeholder="you@example.com" autocomplete="email" /></label>
-            <label>Credits to redeem<input id="burn-amount" type="number" min="1" step="1" value="10" /></label>
-            <button id="burn-button" class="button button-ink" disabled>Redeem credits <span>↗</span></button>
-          </article>
+        <section class="app-section">
+          <div class="section-heading"><div><p class="eyebrow">Earn GREEN</p><h2>Choose a green initiative</h2></div><span class="section-note">Verified actions</span></div>
+          <p class="section-intro">Complete a real-world action, then claim the matching GREEN reward in your connected wallet.</p>
+          <label class="identity-field">Your investor email<input id="investor-email" type="email" placeholder="you@example.com" autocomplete="email" /></label>
+          <div class="initiative-grid">
+            <article class="initiative-card"><span class="initiative-icon">↟</span><div><h3>Cycle or walk</h3><p>Choose active travel instead of a car journey.</p><strong>+10 GREEN</strong></div><button class="button button-green initiative-button" data-amount="10" disabled>Claim reward <span>↗</span></button></article>
+            <article class="initiative-card"><span class="initiative-icon">♧</span><div><h3>Plant a tree</h3><p>Plant or sponsor a native tree in your community.</p><strong>+25 GREEN</strong></div><button class="button button-green initiative-button" data-amount="25" disabled>Claim reward <span>↗</span></button></article>
+            <article class="initiative-card"><span class="initiative-icon">◒</span><div><h3>Recycle responsibly</h3><p>Take verified waste to a local recycling point.</p><strong>+15 GREEN</strong></div><button class="button button-green initiative-button" data-amount="15" disabled>Claim reward <span>↗</span></button></article>
+          </div>
+        </section>
 
-          <article class="action-card action-setup">
-            <div class="card-top"><span class="step-number">03</span><span class="card-icon">◆</span></div>
-            <h3>Initialize GREEN</h3>
-            <p>Deploy the GREEN token once with this connected wallet as tokenizer.</p>
-            <label>Tokenizer email<input id="tokenizer-email" type="email" placeholder="issuer@example.com" autocomplete="email" /></label>
-            <button id="create-button" class="button button-outline" disabled>Deploy token <span>↗</span></button>
-          </article>
+        <section class="app-section rewards-section">
+          <div class="section-heading"><div><p class="eyebrow">Redeem GREEN</p><h2>Choose an eco-friendly reward</h2></div><span class="section-note">Spend your balance</span></div>
+          <p class="section-intro">Use the GREEN in your wallet for a sustainable gift. Redemption burns the selected amount on-chain.</p>
+          <div class="reward-grid">
+            <article class="reward-card"><div class="reward-art reward-art-seed">✳</div><div class="reward-copy"><h3>Pollinator seed kit</h3><p>Native wildflower seeds for a brighter balcony or garden.</p><strong>20 GREEN</strong><button class="button button-ink reward-button" data-amount="20" disabled>Redeem reward <span>↗</span></button></div></article>
+            <article class="reward-card"><div class="reward-art reward-art-bottle">◯</div><div class="reward-copy"><h3>Reusable bottle</h3><p>A durable everyday bottle to replace single-use plastic.</p><strong>35 GREEN</strong><button class="button button-ink reward-button" data-amount="35" disabled>Redeem reward <span>↗</span></button></div></article>
+            <article class="reward-card"><div class="reward-art reward-art-tree">♧</div><div class="reward-copy"><h3>Community tree pledge</h3><p>Support a local planting project and its long-term care.</p><strong>50 GREEN</strong><button class="button button-ink reward-button" data-amount="50" disabled>Redeem reward <span>↗</span></button></div></article>
+          </div>
         </section>
 
         <section class="activity-section">

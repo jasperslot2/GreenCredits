@@ -85,6 +85,20 @@ router.get("/balance", async (req, res) => {
   }
 });
 
+router.get("/whitelist", async (req, res) => {
+  try {
+    const config = getBrickkenConfig();
+    const address = requireAddress(req.query.address);
+    const whitelist = await brickkenRequest(
+      `/get-whitelist-status?tokenSymbol=${encodeURIComponent(config.tokenSymbol)}&address=${encodeURIComponent(address)}`,
+      { method: "GET" },
+    );
+    res.json(whitelist);
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
 router.post("/prepare", async (req, res) => {
   try {
     const config = getBrickkenConfig();
@@ -133,7 +147,7 @@ router.post("/prepare", async (req, res) => {
           investorAddress: walletAddress,
           investorEmail: requireText(investorEmail, "investorEmail"),
           amount: requireAmount(req.body?.amount),
-          needWhitelist: false,
+          needWhitelist: req.body?.needWhitelist !== false,
           needKyc: false,
         }],
       };

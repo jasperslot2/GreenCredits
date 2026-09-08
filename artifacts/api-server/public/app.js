@@ -12,7 +12,10 @@ function showToast(message) {
 function shortAddress(address) { return `${address.slice(0, 6)}...${address.slice(-4)}`; }
 function setBusy(button, busy) { button.disabled = busy || !state.account; button.dataset.original = button.dataset.original || button.textContent; button.textContent = busy ? "Waiting for wallet..." : button.dataset.original; }
 function setConnected(enabled) {
-  ["refresh-button", "mint-button", "burn-button", "create-button"].forEach((id) => { $(id).disabled = !enabled; });
+  ["refresh-button", "create-button", ...document.querySelectorAll(".initiative-button, .reward-button")].forEach((control) => {
+    const element = typeof control === "string" ? $(control) : control;
+    if (element) element.disabled = !enabled;
+  });
   $("connect-button").textContent = enabled ? shortAddress(state.account) : "Connect wallet";
   $("wallet-address").textContent = enabled ? state.account : "Wallet not connected";
   $("wallet-state").lastElementChild.textContent = enabled ? "Wallet connected. You are ready to act." : "Connect your wallet to enter the app";
@@ -109,7 +112,7 @@ async function prepareAndExecute(operation, body, label) {
 
 async function refreshBalance() {
   if (!state.account) return;
-  const email = $("investor-email").value.trim() || $("redeem-email").value.trim();
+  const email = $("investor-email").value.trim();
   if (!email) { $("balance-source").textContent = "Enter your investor email to read the Brickken balance."; return; }
   try {
     const result = await api(`/brickken/balance?investorEmail=${encodeURIComponent(email)}`);
@@ -121,32 +124,48 @@ async function refreshBalance() {
 
 async function createToken() {
   const button = $("create-button"); setBusy(button, true);
-  try { await prepareAndExecute("create", { tokenizerEmail: $("tokenizer-email").value.trim() }, "GREEN token deployment"); showToast("GREEN token confirmed on-chain."); }
+  try {
+    await prepareAndExecute("create", { tokenizerEmail: $("tokenizer-email").value.trim() }, "GREEN token deployment");
+    $("setup-panel").hidden = true;
+    showToast("GREEN token confirmed on-chain.");
+  }
   catch (error) { addActivity("Token deployment failed", error.message, false); showToast(error.message); }
   finally { setBusy(button, false); }
 }
-async function mint() {
-  const button = $("mint-button"); setBusy(button, true);
+async function mint(amount, button) {
+  setBusy(button, true);
   try {
     const email = $("investor-email").value.trim();
-    const amount = $("mint-amount").value;
     if (!email) throw new Error("Enter an investor email first.");
-    await prepareAndExecute("whitelist", { investorEmail: email }, "Wallet whitelisted");
-    await prepareAndExecute("mint", { investorEmail: email, amount }, `Minted ${amount} GREEN`);
+    const whitelist = await api(`/brickken/whitelist?address=${encodeURIComponent(state.account)}`);
+    const isWhitelisted = whitelist.isWhitelisted === true;
+    await prepareAndExecute("mint", {
+      investorEmail: email,
+      amount,
+      needWhitelist: !isWhitelisted,
+    }, `Minted ${amount} GREEN`);
     await refreshBalance(); showToast(`${amount} GREEN minted.`);
   } catch (error) { addActivity("Mint failed", error.message, false); showToast(error.message); }
   finally { setBusy(button, false); }
 }
-async function burn() {
-  const button = $("burn-button"); setBusy(button, true);
+async function burn(amount, button) {
+  setBusy(button, true);
   try {
-    const email = $("redeem-email").value.trim();
-    const amount = $("burn-amount").value;
+    const email = $("investor-email").value.trim();
     if (!email) throw new Error("Enter an investor email first.");
     await prepareAndExecute("burn", { investorEmail: email, amount }, `Redeemed ${amount} GREEN`);
-    $("investor-email").value = email; await refreshBalance(); showToast(`${amount} GREEN redeemed.`);
+    await refreshBalance(); showToast(`${amount} GREEN redeemed.`);
   } catch (error) { addActivity("Redemption failed", error.message, false); showToast(error.message); }
   finally { setBusy(button, false); }
+}
+
+async function initializeTokenState() {
+  try {
+    await api("/brickken/token");
+    $("setup-panel").hidden = true;
+  } catch (error) {
+    $("setup-panel").hidden = false;
+  }
 }
 
 async function bootstrap() {
@@ -154,12 +173,13 @@ async function bootstrap() {
     state.config = await api("/brickken/config");
     $("balance-symbol").textContent = state.config.tokenSymbol;
     $("network-label").textContent = `Sandbox / chain ${state.config.chainId}`;
+    await initializeTokenState();
     $("connect-button").addEventListener("click", () => connectWallet().catch((error) => showToast(error.message)));
     $("refresh-button").addEventListener("click", () => refreshBalance());
     $("create-button").addEventListener("click", createToken);
-    $("mint-button").addEventListener("click", mint);
-    $("burn-button").addEventListener("click", burn);
-    ["investor-email", "redeem-email"].forEach((id) => $(id).addEventListener("change", refreshBalance));
+    document.querySelectorAll(".initiative-button").forEach((button) => button.addEventListener("click", () => mint(button.dataset.amount, button)));
+    document.querySelectorAll(".reward-button").forEach((button) => button.addEventListener("click", () => burn(button.dataset.amount, button)));
+    $("investor-email").addEventListener("change", refreshBalance);
     if (state.ethereum) state.ethereum.on?.("accountsChanged", (accounts) => { state.account = accounts[0] || null; setConnected(Boolean(state.account)); });
   } catch (error) { showToast(error.message); }
 }
