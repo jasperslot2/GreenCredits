@@ -37,7 +37,7 @@ const publicDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../public",
 );
-app.use(express.static(publicDir));
+app.use(express.static(publicDir, { cacheControl: false, etag: false, lastModified: false }));
 app.get("*splat", (_req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });

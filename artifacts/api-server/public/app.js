@@ -173,8 +173,25 @@ async function checkTokenRegistration() {
     }
     throw new Error("GREEN is not visible in Brickken yet.");
   } catch (error) {
-    updateCreationProgress(96, "Still indexing with Brickken", `${error.message} Do not deploy GREEN again.`);
-    showToast(error.message);
+    const deployment = localStorage.getItem("greencredits-deployment");
+    if (!deployment) {
+      updateCreationProgress(0, "No deployment found", "No wallet transaction is saved in this browser. Do not deploy again until the previous transaction is verified.");
+      showToast("No saved deployment transaction was found.");
+      return;
+    }
+    const { txId, hash } = JSON.parse(deployment);
+    try {
+      const status = await api(`/brickken/status?txId=${encodeURIComponent(txId)}&hash=${encodeURIComponent(hash)}&poll=${Date.now()}`);
+      const value = String(status.status || status.state || "").toLowerCase();
+      if (["rejected", "failed", "reverted", "error"].includes(value)) {
+        throw new Error(`Brickken rejected the deployment: ${status.error || status.message || "No reason supplied."}`);
+      }
+      updateCreationProgress(96, "Still indexing with Brickken", `Wallet transaction ${shortAddress(hash)} is confirmed, but GREEN is not registered in Brickken yet. Do not deploy again.`);
+      showToast("GREEN is not registered in Brickken yet.");
+    } catch (statusError) {
+      updateCreationProgress(96, "Deployment status unavailable", `${statusError.message} Transaction: ${shortAddress(hash)}`);
+      showToast(statusError.message);
+    }
   } finally {
     setBusy(button, false);
   }
