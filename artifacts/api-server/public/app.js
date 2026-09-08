@@ -37,7 +37,7 @@ function addActivity(label, detail, success = true) {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(`/api${path}`, { headers: { "content-type": "application/json" }, ...options });
+  const response = await fetch(`/api${path}`, { cache: "no-store", headers: { "content-type": "application/json" }, ...options });
   const raw = await response.text();
   let data = {};
   try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
@@ -118,17 +118,18 @@ async function waitForWalletReceipt(hash) {
 async function waitForConfirmation(txId, hash, progress) {
   await waitForWalletReceipt(hash);
   if (progress) progress(82, "Indexing with Brickken", "The blockchain receipt is confirmed. Brickken is registering the GREEN token.");
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const status = await api(`/brickken/status?txId=${encodeURIComponent(txId)}`);
+  for (let attempt = 0; attempt < 90; attempt += 1) {
+    const status = await api(`/brickken/status?txId=${encodeURIComponent(txId)}&poll=${Date.now()}`);
     const value = String(status.status || status.state || "").toLowerCase();
     if (["confirmed", "success", "completed", "succeeded"].includes(value)) {
       if (progress) progress(100, "GREEN is ready", "The token has been created and is ready for rewards.");
       return status;
     }
     if (["failed", "reverted", "rejected", "error"].includes(value)) throw new Error(`Transaction ${value}.`);
-    await new Promise((resolve) => window.setTimeout(resolve, 1000));
+    if (progress && attempt % 5 === 0) progress(82 + Math.min(16, Math.floor(attempt / 5)), "Indexing with Brickken", "The transaction is confirmed. Waiting for Brickken to finish registering GREEN.");
+    await new Promise((resolve) => window.setTimeout(resolve, 2000));
   }
-  throw new Error("The transaction is confirmed in your wallet, but Brickken is still indexing it. Wait a moment before starting another action.");
+  throw new Error("Brickken is taking longer than expected to index GREEN. The wallet transaction is confirmed; check again shortly before retrying.");
 }
 
 async function prepareAndExecute(operation, body, label, progress) {
