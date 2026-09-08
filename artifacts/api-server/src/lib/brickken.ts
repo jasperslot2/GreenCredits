@@ -64,17 +64,24 @@ function getBrickkenError(responseBody: unknown): string | undefined {
   if (!responseBody || typeof responseBody !== "object") return undefined;
   const body = responseBody as Record<string, unknown>;
   for (const key of ["message", "error", "detail"]) {
-    if (typeof body[key] === "string" && body[key].trim()) return body[key].trim();
+    if (typeof body[key] === "string" && body[key].trim()) return simplifyBrickkenError(body[key].trim());
   }
   if (Array.isArray(body.errors)) {
     const errors = body.errors.filter((error): error is string => typeof error === "string");
-    if (errors.length > 0) return errors.join("; ");
+    if (errors.length > 0) return simplifyBrickkenError(errors.join("; "));
   }
   if (body.errors && typeof body.errors === "object") {
     const nestedErrors = body.errors as Record<string, unknown>;
     if (typeof nestedErrors.messages === "string" && nestedErrors.messages.trim()) {
-      return nestedErrors.messages.trim();
+      return simplifyBrickkenError(nestedErrors.messages.trim());
     }
   }
   return JSON.stringify(responseBody);
+}
+
+function simplifyBrickkenError(message: string): string {
+  if (message.includes("Address: low-level delegate call failed")) {
+    return "Brickken rejected this wallet for token deployment. The connected signer wallet must be whitelisted by Brickken and linked to an active tokenization license. Contact tech@brickken.com with the wallet address.";
+  }
+  return message;
 }
