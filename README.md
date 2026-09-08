@@ -35,3 +35,13 @@ Sustainable action → Mint → Earn → Redeem → Burn
 Brickken API
 
 Brickken provides the tokenization infrastructure behind GreenCredits. The application demonstrates how the Brickken API can be used to create a token and manage its lifecycle through minting and burning.
+
+Local sandbox configuration
+
+The API server can run independently. For local sandbox development, create `artifacts/api-server/.env.sandbox` with the sandbox-only credentials:
+
+```dotenv
+BRICKKEN_API_KEY=replace-with-your-sandbox-key
+```
+
+The `.env.sandbox` file is ignored by git. Production deployments must provide `BRICKKEN_API_KEY` through their environment and must not reuse the sandbox key.
