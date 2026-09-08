@@ -46,12 +46,28 @@ export async function brickkenRequest(
   const responseBody = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const detail =
-      responseBody && typeof responseBody === "object" && "message" in responseBody
-        ? String(responseBody.message)
-        : `Brickken returned HTTP ${response.status}.`;
+    const detail = getBrickkenError(responseBody) ?? `Brickken returned HTTP ${response.status}.`;
     throw new Error(detail);
   }
 
   return responseBody;
+}
+
+function getBrickkenError(responseBody: unknown): string | undefined {
+  if (!responseBody || typeof responseBody !== "object") return undefined;
+  const body = responseBody as Record<string, unknown>;
+  for (const key of ["message", "error", "detail"]) {
+    if (typeof body[key] === "string" && body[key].trim()) return body[key].trim();
+  }
+  if (Array.isArray(body.errors)) {
+    const errors = body.errors.filter((error): error is string => typeof error === "string");
+    if (errors.length > 0) return errors.join("; ");
+  }
+  if (body.errors && typeof body.errors === "object") {
+    const nestedErrors = body.errors as Record<string, unknown>;
+    if (typeof nestedErrors.messages === "string" && nestedErrors.messages.trim()) {
+      return nestedErrors.messages.trim();
+    }
+  }
+  return JSON.stringify(responseBody);
 }

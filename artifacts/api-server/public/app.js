@@ -28,8 +28,10 @@ function addActivity(label, detail, success = true) {
 
 async function api(path, options = {}) {
   const response = await fetch(`/api${path}`, { headers: { "content-type": "application/json" }, ...options });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "The API request failed.");
+  const raw = await response.text();
+  let data = {};
+  try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
+  if (!response.ok) throw new Error(data.error || raw || `API request failed with HTTP ${response.status}.`);
   return data;
 }
 

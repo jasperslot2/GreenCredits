@@ -22,6 +22,12 @@ function requireText(value: unknown, field: string): string {
   return value.trim();
 }
 
+function optionalText(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : undefined;
+}
+
 function requireAmount(value: unknown): string {
   const amount = requireText(value, "amount");
   if (!/^\d+$/.test(amount) || BigInt(amount) <= 0n) {
@@ -79,9 +85,7 @@ router.post("/prepare", async (req, res) => {
     const config = getBrickkenConfig();
     const operation = requireText(req.body?.operation, "operation") as BrickkenOperation;
     const walletAddress = requireAddress(req.body?.walletAddress);
-    const investorEmail = req.body?.investorEmail
-      ? requireText(req.body.investorEmail, "investorEmail")
-      : undefined;
+    const investorEmail = optionalText(req.body?.investorEmail);
     const common = {
       chainId: config.chainId,
       signerAddress: walletAddress,
@@ -95,7 +99,10 @@ router.post("/prepare", async (req, res) => {
         method: "newTokenization",
         chainId: config.chainId,
         signerAddress: walletAddress,
-        tokenizerEmail: requireText(req.body?.tokenizerEmail ?? config.tokenizerEmail, "tokenizerEmail"),
+        tokenizerEmail: requireText(
+          optionalText(req.body?.tokenizerEmail) ?? config.tokenizerEmail,
+          "tokenizerEmail",
+        ),
         name: config.tokenName,
         tokenSymbol: config.tokenSymbol,
         tokenType: "RWA_TOKEN",
