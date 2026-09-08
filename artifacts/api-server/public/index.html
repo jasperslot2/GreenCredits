@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#102b2a" />
+    <title>GreenCredits | Sustainable rewards</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="GreenCredits home">
+          <span class="brand-mark">G</span>
+          <span>GreenCredits</span>
+        </a>
+        <div class="network-pill"><span class="status-dot"></span><span id="network-label">Sandbox / Sepolia</span></div>
+        <button id="connect-button" class="button button-dark">Connect wallet</button>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">On-chain sustainability rewards</p>
+            <h1>Make good actions<br /><em>count.</em></h1>
+            <p class="hero-text">GreenCredits turns verified environmental actions into GREEN tokens you can hold and redeem.</p>
+            <div class="wallet-state" id="wallet-state">
+              <span class="wallet-icon">⌁</span>
+              <span>Connect your wallet to enter the app</span>
+            </div>
+          </div>
+          <div class="hero-orbit" aria-hidden="true">
+            <div class="orbit orbit-one"></div>
+            <div class="orbit orbit-two"></div>
+            <div class="leaf-core"><span>G</span></div>
+            <span class="orbit-label label-one">MINT</span>
+            <span class="orbit-label label-two">HOLD</span>
+            <span class="orbit-label label-three">REDEEM</span>
+          </div>
+        </section>
+
+        <section class="dashboard" id="dashboard" aria-live="polite">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Your wallet</p>
+              <h2>Green balance</h2>
+            </div>
+            <button id="refresh-button" class="icon-button" title="Refresh balance" disabled>↻</button>
+          </div>
+          <div class="balance-row">
+            <div class="balance-number"><span id="balance-value">--</span><span class="balance-symbol" id="balance-symbol">GREEN</span></div>
+            <div class="wallet-address" id="wallet-address">Wallet not connected</div>
+          </div>
+          <p class="muted" id="balance-source">Your on-chain balance appears here after connecting.</p>
+        </section>
+
+        <section class="actions-grid">
+          <article class="action-card action-mint">
+            <div class="card-top"><span class="step-number">01</span><span class="card-icon">+</span></div>
+            <h3>Record an action</h3>
+            <p>Mint GREEN when a sustainable action has been verified.</p>
+            <label>Investor email<input id="investor-email" type="email" placeholder="you@example.com" autocomplete="email" /></label>
+            <label>Credits to mint<input id="mint-amount" type="number" min="1" step="1" value="10" /></label>
+            <button id="mint-button" class="button button-green" disabled>Mint GREEN <span>↗</span></button>
+          </article>
+
+          <article class="action-card action-redeem">
+            <div class="card-top"><span class="step-number">02</span><span class="card-icon">−</span></div>
+            <h3>Redeem a reward</h3>
+            <p>Burn GREEN from this wallet when a reward is claimed.</p>
+            <label>Investor email<input id="redeem-email" type="email" placeholder="you@example.com" autocomplete="email" /></label>
+            <label>Credits to redeem<input id="burn-amount" type="number" min="1" step="1" value="10" /></label>
+            <button id="burn-button" class="button button-ink" disabled>Redeem credits <span>↗</span></button>
+          </article>
+
+          <article class="action-card action-setup">
+            <div class="card-top"><span class="step-number">03</span><span class="card-icon">◆</span></div>
+            <h3>Initialize GREEN</h3>
+            <p>Deploy the GREEN token once with this connected wallet as tokenizer.</p>
+            <label>Tokenizer email<input id="tokenizer-email" type="email" placeholder="issuer@example.com" autocomplete="email" /></label>
+            <button id="create-button" class="button button-outline" disabled>Deploy token <span>↗</span></button>
+          </article>
+        </section>
+
+        <section class="activity-section">
+          <div class="section-heading">
+            <div><p class="eyebrow">Activity</p><h2>Transaction trail</h2></div>
+            <span class="live-label"><span class="status-dot"></span>Live</span>
+          </div>
+          <div class="activity-log" id="activity-log"><p class="empty-state">Connect a wallet to start your first on-chain action.</p></div>
+        </section>
+      </main>
+
+      <footer><span>GREEN token rewards for real-world actions.</span><span>Powered by Brickken</span></footer>
+    </div>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

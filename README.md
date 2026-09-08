@@ -38,10 +38,16 @@ Brickken provides the tokenization infrastructure behind GreenCredits. The appli
 
 Local sandbox configuration
 
-The API server can run independently. For local sandbox development, create `artifacts/api-server/.env.sandbox` with the sandbox-only credentials:
+The API server includes the GreenCredits web app and can run independently. It uses an injected EVM wallet (for example MetaMask) to sign every Brickken transaction. Use Ethereum Sepolia for the sandbox. Create `artifacts/api-server/.env.sandbox` with the sandbox-only configuration:
 
 ```dotenv
 BRICKKEN_API_KEY=replace-with-your-sandbox-key
+BRICKKEN_TOKENIZER_EMAIL=issuer@example.com
+BRICKKEN_CHAIN_ID=11155111
+BRICKKEN_TOKEN_SYMBOL=GREEN
+BRICKKEN_TOKEN_NAME=GreenCredits
 ```
 
-The `.env.sandbox` file is ignored by git. Production deployments must provide `BRICKKEN_API_KEY` through their environment and must not reuse the sandbox key.
+The `.env.sandbox` file is ignored by git. Start it with `pnpm run dev` from `artifacts/api-server`, then open `http://localhost:8080`. Connect the wallet, deploy GREEN once, and use a separate investor email for minting. Brickken requires the tokenizer and investor email identities to differ.
+
+Production deployments must provide `BRICKKEN_API_KEY` through their environment and must not reuse the sandbox key. The browser never receives the API key.
