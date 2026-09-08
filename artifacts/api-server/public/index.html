@@ -64,6 +64,11 @@
             <input id="tokenizer-email" type="email" placeholder="Licensed Brickken email" autocomplete="email" />
             <button id="create-button" class="button button-outline" disabled>Deploy GREEN <span>↗</span></button>
           </div>
+          <div class="creation-progress" id="creation-progress" hidden>
+            <div class="progress-header"><span id="creation-progress-label">Preparing token deployment</span><span id="creation-progress-percent">0%</span></div>
+            <div class="progress-track"><div class="progress-bar" id="creation-progress-bar"></div></div>
+            <p id="creation-progress-detail">Waiting for Brickken to prepare the deployment.</p>
+          </div>
         </section>
 
         <section class="app-section">

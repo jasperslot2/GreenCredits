@@ -11,6 +11,13 @@ function showToast(message) {
 
 function shortAddress(address) { return `${address.slice(0, 6)}...${address.slice(-4)}`; }
 function setBusy(button, busy) { button.disabled = busy || !state.account; button.dataset.original = button.dataset.original || button.textContent; button.textContent = busy ? "Waiting for wallet..." : button.dataset.original; }
+function updateCreationProgress(percent, label, detail) {
+  $("creation-progress").hidden = false;
+  $("creation-progress-bar").style.width = `${percent}%`;
+  $("creation-progress-percent").textContent = `${percent}%`;
+  $("creation-progress-label").textContent = label;
+  $("creation-progress-detail").textContent = detail;
+}
 function setConnected(enabled) {
   ["refresh-button", "create-button", ...document.querySelectorAll(".initiative-button, .reward-button")].forEach((control) => {
     const element = typeof control === "string" ? $(control) : control;
@@ -79,18 +86,20 @@ function walletTransaction(item) {
   return { from: state.account, to: tx.to, data: tx.data, value: asHex(tx.value), gas: asHex(tx.gas ?? tx.gasLimit) };
 }
 
-async function executePrepared(prepared, label) {
+async function executePrepared(prepared, label, progress) {
   const items = getTransactionItems(prepared);
   const hashes = [];
   for (let index = 0; index < items.length; index += 1) {
     const txId = getTransactionId(prepared, index);
     if (!txId) throw new Error("Brickken did not return a transaction ID.");
+    if (progress) progress(45, "Confirm in your wallet", "Approve the GREEN deployment in your wallet.");
     const hash = await state.ethereum.request({ method: "eth_sendTransaction", params: [walletTransaction(items[index])] });
     hashes.push({ txId, hash });
     await api("/brickken/send", { method: "POST", body: JSON.stringify({ txId, txHash: hash }) });
     addActivity(label, `${shortAddress(hash)} submitted`);
+    if (progress) progress(65, "Confirming on-chain", "Your wallet transaction was submitted. Waiting for the blockchain receipt.");
   }
-  for (const submitted of hashes) await waitForConfirmation(submitted.txId, submitted.hash);
+  for (const submitted of hashes) await waitForConfirmation(submitted.txId, submitted.hash, progress);
   return hashes;
 }
 
@@ -106,21 +115,25 @@ async function waitForWalletReceipt(hash) {
   throw new Error("The wallet transaction is still pending. Check your wallet before retrying.");
 }
 
-async function waitForConfirmation(txId, hash) {
+async function waitForConfirmation(txId, hash, progress) {
   await waitForWalletReceipt(hash);
+  if (progress) progress(82, "Indexing with Brickken", "The blockchain receipt is confirmed. Brickken is registering the GREEN token.");
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const status = await api(`/brickken/status?txId=${encodeURIComponent(txId)}`);
     const value = String(status.status || status.state || "").toLowerCase();
-    if (["confirmed", "success", "completed", "succeeded"].includes(value)) return status;
+    if (["confirmed", "success", "completed", "succeeded"].includes(value)) {
+      if (progress) progress(100, "GREEN is ready", "The token has been created and is ready for rewards.");
+      return status;
+    }
     if (["failed", "reverted", "rejected", "error"].includes(value)) throw new Error(`Transaction ${value}.`);
     await new Promise((resolve) => window.setTimeout(resolve, 1000));
   }
   throw new Error("The transaction is confirmed in your wallet, but Brickken is still indexing it. Wait a moment before starting another action.");
 }
 
-async function prepareAndExecute(operation, body, label) {
+async function prepareAndExecute(operation, body, label, progress) {
   const prepared = await api("/brickken/prepare", { method: "POST", body: JSON.stringify({ operation, walletAddress: state.account, ...body }) });
-  return executePrepared(prepared, label);
+  return executePrepared(prepared, label, progress);
 }
 
 async function refreshBalance() {
@@ -137,12 +150,18 @@ async function refreshBalance() {
 
 async function createToken() {
   const button = $("create-button"); setBusy(button, true);
+  updateCreationProgress(15, "Preparing token deployment", "Brickken is preparing the GREEN token transaction.");
   try {
-    await prepareAndExecute("create", { tokenizerEmail: $("tokenizer-email").value.trim() }, "GREEN token deployment");
+    await prepareAndExecute("create", { tokenizerEmail: $("tokenizer-email").value.trim() }, "GREEN token deployment", updateCreationProgress);
     $("setup-panel").hidden = true;
     showToast("GREEN token confirmed on-chain.");
   }
-  catch (error) { addActivity("Token deployment failed", error.message, false); showToast(error.message); }
+  catch (error) {
+    updateCreationProgress(0, "Token deployment failed", error.message);
+    $("creation-progress-bar").classList.add("progress-error");
+    addActivity("Token deployment failed", error.message, false);
+    showToast(error.message);
+  }
   finally { setBusy(button, false); }
 }
 async function mint(amount, button) {
