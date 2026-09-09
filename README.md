@@ -51,3 +51,8 @@ BRICKKEN_TOKEN_NAME=GreenCredits
 The `.env.sandbox` file is ignored by git. Start it with `pnpm run dev` from `artifacts/api-server`, then open `http://localhost:8080`. Connect the wallet, deploy GREEN once, and use a separate investor email for minting. Brickken requires the tokenizer and investor email identities to differ.
 
 Production deployments must provide `BRICKKEN_API_KEY` through their environment and must not reuse the sandbox key. The browser never receives the API key.
+
+AI notice:
+This application has been made using replit first than, after i used all credits in one hour. Moved to Git Codespaces. After that, I thought It would be best to move to VS Code with Codespaces integration. This worked the best. 
+Vibe coding all the way! 
+
